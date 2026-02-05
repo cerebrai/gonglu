@@ -34,7 +34,7 @@ Creates a new alarm for a registered device.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id_token` | string | Yes | The user's Gonglu device ID (e.g., `gonglu-a1b2c3d4-...`) |
-| `alarm_time` | string (ISO 8601) | Yes | When the alarm should fire. **Must be in the future.** Example: `2026-03-15T07:30:00` |
+| `alarm_time` | string (ISO 8601) | Yes | When the alarm should fire. **Must be in the future. Must include timezone offset.** Example: `2026-03-15T07:30:00+05:00` |
 | `alarm_text` | string | No | Description/reminder text shown when the alarm rings |
 | `alarm_data` | object | No | Additional data (e.g., `{"ringtone": "gong"}`) |
 
@@ -45,7 +45,7 @@ curl -X POST https://<server>/alarm \
   -H "Content-Type: application/json" \
   -d '{
     "id_token": "gonglu-a1b2c3d4-5678-9abc-def0-1234567890ab",
-    "alarm_time": "2026-03-15T07:30:00",
+    "alarm_time": "2026-03-15T07:30:00+05:00",
     "alarm_text": "Time for your morning meeting!"
   }'
 ```
@@ -102,11 +102,24 @@ Device IDs follow the pattern: `gonglu-{uuid-v4}`
 
 Example: `gonglu-a1b2c3d4-5678-9abc-def0-1234567890ab`
 
-## Timezone Handling
+## Timezone Handling (Important!)
 
-- `alarm_time` should be provided in ISO 8601 format.
-- If no timezone offset is included, the time is treated as UTC.
-- To specify a timezone, include an offset: `2026-03-15T07:30:00+05:30`
+**You MUST include the user's timezone offset in `alarm_time`.** If you omit it, the time will be interpreted as-is by the mobile app, which will almost certainly be wrong for the user.
+
+- **Always ask the user for their timezone** if you don't already know it, or infer it from context.
+- Format: `YYYY-MM-DDTHH:MM:SS+HH:MM` (ISO 8601 with offset)
+
+| Timezone | Offset | Example |
+|----------|--------|---------|
+| UTC | `+00:00` | `2026-03-15T07:30:00+00:00` |
+| Pakistan (PKT) | `+05:00` | `2026-03-15T07:30:00+05:00` |
+| India (IST) | `+05:30` | `2026-03-15T07:30:00+05:30` |
+| US Eastern (EST) | `-05:00` | `2026-03-15T07:30:00-05:00` |
+| US Pacific (PST) | `-08:00` | `2026-03-15T07:30:00-08:00` |
+
+**Wrong:** `"alarm_time": "2026-03-15T07:30:00"` (no offset — will display incorrectly on the user's phone)
+
+**Correct:** `"alarm_time": "2026-03-15T07:30:00+05:00"` (includes user's timezone offset)
 
 ## Example User Prompt
 
@@ -115,9 +128,10 @@ A user might say to an AI agent:
 > "Set an alarm for 7 AM tomorrow with the message 'Stand-up meeting in 30 minutes' using my Gonglu ID: gonglu-a1b2c3d4-5678-9abc-def0-1234567890ab"
 
 The AI agent should:
-1. Parse the time ("7 AM tomorrow") into an ISO 8601 datetime in the future.
-2. Call `POST /alarm` with the user's `id_token`, the computed `alarm_time`, and the `alarm_text`.
-3. Confirm to the user that the alarm was set, including the alarm time.
+1. Determine the user's timezone (ask if unknown).
+2. Parse the time ("7 AM tomorrow") into an ISO 8601 datetime **with the user's timezone offset**.
+3. Call `POST /alarm` with the user's `id_token`, the computed `alarm_time`, and the `alarm_text`.
+4. Confirm to the user that the alarm was set, including the alarm time in their local timezone.
 
 ## Notes
 
