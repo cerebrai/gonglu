@@ -1,8 +1,3 @@
----
-layout: default
-title: Gonglu API — Guide for AI Agents
----
-
 # Gonglu API — Guide for AI Agents
 
 ## Overview
@@ -12,10 +7,10 @@ Gonglu is an AI-powered alarm system. AI agents (ChatGPT, Claude, Gemini, etc.) 
 ## Base URL
 
 ```
-https://<your-gonglu-server>
+http://3.26.210.230:8000
 ```
 
-The user will provide the server URL. The interactive docs are at `/docs`.
+The interactive docs are at `/docs`.
 
 ## Prerequisites
 
@@ -41,7 +36,7 @@ Creates a new alarm for a registered device.
 #### Example Request
 
 ```bash
-curl -X POST https://<server>/alarm \
+curl -X POST http://3.26.210.230:8000/alarm \
   -H "Content-Type: application/json" \
   -d '{
     "id_token": "gonglu-a1b2c3d4-5678-9abc-def0-1234567890ab",
